@@ -1,10 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// let rad = Math.PI / 180;
-let camera, scene, renderer, controls;
-// let orbit, light;
-// let renderCalls = [];
+let camera, scene, renderer, controls, groupCar;
+let speed = 0.5;
 
 init();
 animate();
@@ -16,11 +14,11 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x242426);
-    renderer.toneMapping = THREE.LinearToneMapping;
+    // renderer.setClearColor(0x242426);
+    // renderer.toneMapping = THREE.LinearToneMapping;
 
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // renderer.shadowMap.enabled = true;
+    // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // --------------------------------------- ADD LATER -----------------------------------
     // window.addEventListener( 'resize', function () {
@@ -33,7 +31,7 @@ function init() {
 
     scene = new THREE.Scene();
     // scene.background = new THREE.Color(0xa0a0a0);
-    scene.fog = new THREE.Fog(0x242426, 20, 600);
+    // scene.fog = new THREE.Fog(0x242426, 20, 600);
 
     camera = new THREE.PerspectiveCamera(
         75,
@@ -58,100 +56,107 @@ function init() {
     controls.minDistance = 0.5;
     controls.maxDistance = 1000;
 
-    const grid = new THREE.GridHelper(
-        100,
-        10,
-        new THREE.Color('black'),
-        new THREE.Color('black')
-    );
-    // --------------------------------------- REMOVE GRID -----------------------------------
-    // scene.add(grid);
+    var light = new THREE.PointLight(0xFFFFFF, 1, 0);
+    light.position.z = 25;
+    light.position.x = 1;
+    light.castShadow = true;
+    // light.shadow.mapSize.width = 512;
+    // light.shadow.mapSize.height = 512;
+    // light.shadow.camera.near = 0.1;
+    light.shadow.camera.far = 50;
+    light.shadow.bias = 0.1;
+    // light.shadow.radius = 5;
+    light.power = 4;
+    scene.add(light);
 
     // --------------------------------------- CAR GEOMETRY -----------------------------------
-    const texture = new THREE.TextureLoader().load( './src/textures/car.jpeg' );
+    const texture = new THREE.TextureLoader().load('./src/textures/car.jpeg');
     texture.colorSpace = THREE.SRGBColorSpace;
-    
+
     let carGeometry = new THREE.BoxGeometry(20, 10, 3);
     let carMaterial = new THREE.MeshPhongMaterial({
         map: texture,
-        // color: 0xB74242,
-        shininess: 100,
-        // emissive: 0xFF0000,
-        // emissiveIntensity: 0.6,
     });
     let carTopGeometry = new THREE.BoxGeometry(12, 8, 5);
     let carTopMaterial = new THREE.MeshPhongMaterial({
         map: texture,
-        // color: 0xB74242,
-        shininess: 100,
-        // emissive: 0x990000,
-        // emissiveIntensity: 0.7
     });
 
     let wheelGeometry = new THREE.CylinderGeometry(3, 3, 1, 6);
     let wheelMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-
-    // const geometry = new THREE.BoxGeometry( 200, 200, 200 );
-    // const material = new THREE.MeshBasicMaterial();
-
-    // const mesh = new THREE.Mesh( geometry, material );
-    // scene.add( mesh );
+    let wheelMaterial2 = new THREE.MeshBasicMaterial({ color: 0x000000 });
 
     let carBody = new THREE.Mesh(carGeometry, carMaterial);
     carBody.castShadow = true;
     carBody.receiveShadow = true;
-    scene.add(carBody);
 
     let carTop = new THREE.Mesh(carTopGeometry, carTopMaterial);
     carTop.position.x -= 2;
     carTop.position.z += 3.5;
     carTop.castShadow = true;
     carTop.receiveShadow = true;
-    scene.add(carTop);
 
-    var light = new THREE.PointLight(0xFFFFFF, 1, 0);
-    light.position.z = 25;
-    light.position.x = 5;
+    let wheel1 = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheel1.position.y = 6
+    wheel1.position.x = 6
 
-    light.castShadow = true;
-    light.shadow.mapSize.width = 512;
-    light.shadow.mapSize.height = 512;
-    light.shadow.camera.near = 0.1;
-    light.shadow.camera.far = 50;
-    light.shadow.bias = 0.1;
-    light.shadow.radius = 5;
+    let wheel2 = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheel2.position.y = 6
+    wheel2.position.x = -6
 
-    light.power = 3;
-    scene.add(light);
+    let wheel3 = new THREE.Mesh(wheelGeometry, wheelMaterial2);
+    wheel3.position.y = -6
+    wheel3.position.x = 6
 
-    const wheels = Array(4).fill(null).map((wheel, i) => {
-        wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        wheel.position.y = i < 2 ? 6 : -6;
-        wheel.position.x = i % 2 ? 6 : -6;
-        wheel.position.z = -3;
-        scene.add(wheel);
-        return wheel;
-    });
+    let wheel4 = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheel4.position.y = -6
+    wheel4.position.x = -6
 
-    const lights = Array(2).fill(null).map((light, i) => {
-        light = new THREE.SpotLight(0xffffff);
-        light.position.x = 11;
-        light.position.y = (i < 1 ? -3 : 3); //;
-        light.position.z = -3;
-        light.angle = Math.PI / 3.5;
-        light.castShadow = true;
-        light.shadow.mapSize.width = 512;
-        light.shadow.mapSize.height = 512;
-        light.shadow.camera.near = 1;
-        light.shadow.camera.far = 400;
-        light.shadow.camera.fov = 40;
-        light.target.position.y = (i < 1 ? -0.5 : 0.5);
-        light.target.position.x = 35;// = Math.PI/2;
-        scene.add(light.target);
-        scene.add(light);
-        return light;
-    });
+    let light1 = new THREE.SpotLight(0xffffff);
+    light1.position.x = 11;
+    light1.position.y = -3;
+    light1.position.z = -3;
+    light1.angle = Math.PI / 3.5;
+    light1.castShadow = true;
+    light1.shadow.camera.near = 1;
+    light1.target.position.y = -0.5;
+    light1.target.position.x = 35;
+    // light1.shadow.mapSize.width = 512;
+    // light1.shadow.mapSize.height = 512;
+    // light1.shadow.camera.far = 400;
+    // light1.shadow.camera.fov = 40;
 
+    let light2 = new THREE.SpotLight(0xffffff);
+    light2.position.x = 11;
+    light2.position.y = 3;
+    light2.position.z = -3;
+    light2.angle = Math.PI / 3.5;
+    light2.castShadow = true;
+    light2.shadow.camera.near = 1;
+    light2.target.position.y = 0.5;
+    light2.target.position.x = 35;
+    // light2.shadow.mapSize.width = 512;
+    // light2.shadow.mapSize.height = 512;
+    // light2.shadow.camera.far = 400;
+    // light2.shadow.camera.fov = 40;
+
+
+    // --------------------------------------- GROUP THE CAR -----------------------------------
+    groupCar = new THREE.Group();
+    groupCar.add(carBody);
+    groupCar.add(carTop);
+    groupCar.add(wheel1);
+    groupCar.add(wheel2);
+    groupCar.add(wheel3);
+    groupCar.add(wheel4);
+    groupCar.add(light1);
+    groupCar.add(light2);
+    groupCar.add(light1.target);
+    groupCar.add(light2.target);
+    scene.add(groupCar)
+
+
+    // groupCar.rotation.y += THREE.MathUtils.degToRad(90); // Rotate by 1 degree
 
 
     // --------------------------------------- GROUND -----------------------------------
@@ -171,33 +176,18 @@ function init() {
             return null;
         }
 
-        for (let j = 0; j <= segmentsY; j++) {
-            for (let i = 0; i <= segmentsX; i++) {
-                let vertexIndex = j * (segmentsX + 1) + i;
-                if (positionAttribute.array[vertexIndex] === undefined) {
-                    console.error(`Error: Vertex at index ${vertexIndex} is undefined.`);
-                    continue;
-                }
-                positionAttribute.array[vertexIndex * 3] += (Math.cos(vertexIndex * vertexIndex) + 1 / 2) * 2;
-                positionAttribute.array[vertexIndex * 3 + 1] += (Math.cos(vertexIndex) + 1 / 2) * 2;
-                positionAttribute.array[vertexIndex * 3 + 2] = (Math.sin(vertexIndex * vertexIndex * vertexIndex) + 1 / 2) * -4;
-            }
-        }
-        // for (let i = 0; i < geometry.vertices.length; i++) {
-        //     geometry.vertices[i].x += (Math.cos(i * i) + 1 / 2) * 2;
-        //     geometry.vertices[i].y += (Math.cos(i) + 1 / 2) * 2;
-        //     geometry.vertices[i].z = (Math.sin(i * i * i) + 1 / 2) * -4;
-        // }
-        // geometry.verticesNeedUpdate = true;
-        // geometry.normalsNeedUpdate = true;
         positionAttribute.needsUpdate = true;
-        // geometry.computeFaceNormals();
+
+        const textureMap = new THREE.TextureLoader().load('./src/textures/sand2.jpeg');
+        textureMap.colorSpace = THREE.SRGBColorSpace;
+        // <------- FOR REPEATING THE TEXTURE, MAYBE NOT PUT IT -------> 
+        textureMap.repeat.set(20, 20); 
+        textureMap.wrapS = THREE.RepeatWrapping;
+        textureMap.wrapT = THREE.RepeatWrapping;
 
         let material = new THREE.MeshPhongMaterial({
-            color: 0xFFFFFF,
-            shininess: 80,
-            // bumpMap: noise,
-            bumpScale: 0.15,
+            map: textureMap,
+            bumpScale: 0.5,
             shading: THREE.SmoothShading
         });
 
@@ -211,9 +201,11 @@ function init() {
 
 }
 
+
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
+    // groupCar.position.x += speed;
     render();
 }
 
